@@ -1,0 +1,59 @@
+name: Deploy Portfolio Analytics Dashboard
+
+on:
+  push:
+    branches: [ main ]
+  workflow_dispatch:
+
+jobs:
+  build-and-deploy-frontend:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '18'
+          cache: 'yarn'
+          cache-dependency-path: frontend/yarn.lock
+
+      - name: Install frontend dependencies
+        run: cd frontend && yarn install --frozen-lockfile
+
+      - name: Build frontend
+        run: cd frontend && yarn build
+        env:
+          REACT_APP_API_URL: https://portfolio-analytics-backend.onrender.com
+
+      - name: Deploy to GitHub Pages
+        uses: JamesIves/github-pages-deploy-action@v4
+        with:
+          folder: frontend/build
+          branch: gh-pages
+
+  build-backend:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '18'
+          cache: 'yarn'
+          cache-dependency-path: backend/yarn.lock
+
+      - name: Install backend dependencies
+        run: cd backend && yarn install --frozen-lockfile
+
+      - name: Create backend build artifact
+        uses: actions/upload-artifact@v3
+        with:
+          name: backend-build
+          path: |
+            backend
+            !backend/node_modules
+          retention-days: 1
